@@ -1,0 +1,116 @@
+# PRIVATE Azure DevOps pipeline for the NetOps (CommScope) Terraform stack.
+# Plan on PR, apply on merge to main. OIDC (workload identity federation) — no secrets in code.
+#
+# This is the PRIVATE variant of cicd/azure-pipelines.yml:
+#   - Runs on a Managed DevOps Pool whose agents are VNet-injected (see cicd-private/bootstrap),
+#     so they can reach the PRIVATE remote-state storage account.
+#   - Uses AAD auth to the state backend (use_azuread_auth) — no storage keys.
+#
+# Prereqs (see cicd-private/README.md):
+#   1. cicd-private/bootstrap applied (private state SA + delegated agent subnet).
+#   2. Managed DevOps Pool created in the portal, injected into snet-agent.
+#   3. Service connection 'sc-netops-cicd' (ARM -> Workload identity federation, automatic),
+#      whose identity has Contributor on the subscription and
+#      Storage Blob Data Contributor on the remote-state storage account.
+#   4. cicd-private/backend.tf copied into terraform/ (or symlinked) and filled in.
+#   5. Variable group 'netops-cicd-secrets' holding the app's secret tfvars (see below).
+#   6. Free "HashiCorp Terraform" marketplace extension (for TerraformInstaller@1).
+
+trigger:
+  branches: { include: [ main ] }
+pr:
+  branches: { include: [ main ] }
+
+variables:
+  - group: netops-cicd-secrets      # holds TF_VAR_* secrets (see README)
+  - name: serviceConnection
+    value: 'sc-netops-cicd'
+  - name: subscriptionId
+    value: '<your-subscription-id>'
+  - name: workingDir
+    value: 'terraform'
+  - name: mdpPool
+    value: 'netops-cicd-pool'
+
+stages:
+# ---------- PLAN (PRs + main) ----------
+- stage: Plan
+  jobs:
+  - job: plan
+    pool: { name: '$(mdpPool)' }   # Managed DevOps Pool, VNet-injected
+    steps:
+      - bash: |
+          if ! command -v unzip >/dev/null 2>&1; then
+            sudo apt-get update -y && sudo apt-get install -y unzip
+          fi
+        displayName: 'Ensure unzip (MDP base image may lack it)'
+      - task: TerraformInstaller@1
+        inputs: { terraformVersion: '1.15.8' }
+      - task: AzureCLI@2
+        displayName: 'terraform plan'
+        inputs:
+          azureSubscription: '$(serviceConnection)'
+          scriptType: bash
+          addSpnToEnvironment: true
+          workingDirectory: '$(workingDir)'
+          scriptLocation: inlineScript
+          inlineScript: |
+            export ARM_USE_OIDC=true
+            export ARM_CLIENT_ID=$servicePrincipalId
+            export ARM_TENANT_ID=$tenantId
+            export ARM_OIDC_TOKEN=$idToken
+            export ARM_SUBSCRIPTION_ID=$(subscriptionId)
+            terraform init
+            terraform validate
+            terraform plan -input=false -out=tfplan
+      - publish: '$(workingDir)/tfplan'
+        artifact: tfplan
+
+# ---------- APPLY (main only, gated by Environment approval) ----------
+- stage: Apply
+  dependsOn: Plan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: apply
+    environment: 'netops-cicd'   # add an approval check on this Environment
+    pool: { name: '$(mdpPool)' } # Managed DevOps Pool, VNet-injected
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+            - download: current
+              artifact: tfplan
+            - bash: |
+                if ! command -v unzip >/dev/null 2>&1; then
+                  sudo apt-get update -y && sudo apt-get install -y unzip
+                fi
+              displayName: 'Ensure unzip (MDP base image may lack it)'
+            - task: TerraformInstaller@1
+              inputs: { terraformVersion: '1.15.8' }
+            - task: AzureCLI@2
+              displayName: 'terraform apply'
+              inputs:
+                azureSubscription: '$(serviceConnection)'
+                scriptType: bash
+                addSpnToEnvironment: true
+                workingDirectory: '$(workingDir)'
+                scriptLocation: inlineScript
+                inlineScript: |
+                  export ARM_USE_OIDC=true
+                  export ARM_CLIENT_ID=$servicePrincipalId
+                  export ARM_TENANT_ID=$tenantId
+                  export ARM_OIDC_TOKEN=$idToken
+                  export ARM_SUBSCRIPTION_ID=$(subscriptionId)
+                  terraform init
+                  cp $(Pipeline.Workspace)/tfplan ./tfplan
+                  terraform apply -input=false tfplan
+
+# NOTE on app secrets:
+#   The NetOps stack expects secret tfvars (App Gateway TLS PFX + DB password).
+#   Provide them via the 'netops-cicd-secrets' variable group as secret variables
+#   named with the TF_VAR_ prefix so Terraform picks them up automatically, e.g.:
+#     TF_VAR_tls_pfx_base64, TF_VAR_tls_pfx_password, TF_VAR_pg_admin_password
+#   (Mark them secret. Prefer sourcing from Key Vault-backed variable groups.)
+#   Container image build/publish (az acr build) is a separate concern — add a
+#   build stage or run scripts/deploy.ps1 image steps out of band.

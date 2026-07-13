@@ -3,6 +3,14 @@
 Take portal-built resources under Terraform management (no downtime), then manage
 them via Azure DevOps pipelines. Start in **dev**, then repeat per environment.
 
+> **Locked-down / private subscription?** The steps below use Microsoft-hosted
+> agents and a reachable remote-state account. If your subscription enforces
+> **private-only storage** and **shared-key-off** (as the deployed NetOps stack
+> does), use the fully-private variant in [`../cicd-private/`](../cicd-private/)
+> instead — it runs on **Managed DevOps Pools** (VNet-injected agents) with an
+> **azapi/AAD** private state account. See
+> [`../cicd-private/README.md`](../cicd-private/README.md).
+
 ## Phase 0 — Plan & prerequisites
 - Inventory what exists per resource group (App Service, SWA, Key Vault, PostgreSQL,
   networking, App Gateway, etc.).

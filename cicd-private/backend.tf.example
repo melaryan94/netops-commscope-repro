@@ -1,0 +1,16 @@
+# Copy this file into terraform/ as backend.tf (or add to your existing terraform
+# config) after running cicd-private/bootstrap. It points Terraform at the PRIVATE
+# remote-state storage account, using AAD (no storage keys — required because the
+# account has shared-key auth disabled by policy).
+#
+# Fill storage_account_name with the bootstrap output `state_storage_account_name`.
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-netops-cicd" # created by cicd-private/bootstrap
+    storage_account_name = "REPLACE_ME"     # = bootstrap output state_storage_account_name
+    container_name       = "tfstate"
+    key                  = "netops-commscope.tfstate"
+    use_azuread_auth     = true # AAD/RBAC, no storage keys
+  }
+}

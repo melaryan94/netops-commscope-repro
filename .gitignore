@@ -13,6 +13,13 @@ terraform/apply*.log
 terraform/plan*.txt
 terraform/destroy*.log
 
+# Private CI/CD bootstrap (local state + provider cache)
+cicd-private/bootstrap/.terraform/
+cicd-private/bootstrap/*.tfstate
+cicd-private/bootstrap/*.tfstate.*
+cicd-private/bootstrap/tfplan
+cicd-private/bootstrap/*.auto.tfvars
+
 # Python
 app/.venv/
 __pycache__/
