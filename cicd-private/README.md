@@ -16,7 +16,13 @@ The plain [`../cicd/azure-pipelines.yml`](../cicd/azure-pipelines.yml) runs on
 | Remote-state storage is **private** (private endpoint only) | Microsoft-hosted agents can't reach it → `terraform init` hangs/fails | **Managed DevOps Pool** with agents **VNet-injected** into a subnet next to the state private endpoint |
 | Policy forces storage **shared-key off** | `azurerm` storage resource's post-create data-plane poll → `403 KeyBasedAuthenticationNotPermitted` | State account managed via **azapi** (control-plane only); backend uses **`use_azuread_auth`** (no keys) |
 | MDP needs to inject agents into your subnet | Pool creation can't attach to the subnet | Subnet **delegated to `Microsoft.DevOpsInfrastructure/pools`** (created via azapi because the pinned azurerm provider doesn't allow that delegation value yet) |
-| Bare agent image | `TerraformInstaller@1` fails: `Unable to locate executable file: 'unzip'` | Pipeline installs `unzip` before the installer |
+| Bare agent image | `TerraformInstaller@1` / `AzureCLI@2` fail: `Unable to locate executable file: 'unzip'` / `'az'` | Pipeline installs `unzip` + Azure CLI up front (or use a richer image — see tip below) |
+
+> **Tip (durable fix):** the install steps exist because a **plain Ubuntu marketplace
+> image** lacks the standard tooling. For production, point the Managed DevOps Pool at
+> the **"Azure Pipelines"** agent image (e.g. `ubuntu-22.04`), which ships with `az`,
+> Terraform, `unzip`, etc. preinstalled — then the install steps are unnecessary. Keep
+> the install steps only if you must run a hardened custom image without that tooling.
 
 ## Layout
 - `bootstrap/` — one-time **private CI/CD platform** (run from a laptop with `terraform apply`):

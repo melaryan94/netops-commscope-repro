@@ -40,10 +40,14 @@ stages:
     pool: { name: '$(mdpPool)' }   # Managed DevOps Pool, VNet-injected
     steps:
       - bash: |
+          set -e
           if ! command -v unzip >/dev/null 2>&1; then
             sudo apt-get update -y && sudo apt-get install -y unzip
           fi
-        displayName: 'Ensure unzip (MDP base image may lack it)'
+          if ! command -v az >/dev/null 2>&1; then
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+        displayName: 'Ensure tooling (unzip + Azure CLI)'
       - task: TerraformInstaller@1
         inputs: { terraformVersion: '1.15.8' }
       - task: AzureCLI@2
@@ -82,10 +86,14 @@ stages:
             - download: current
               artifact: tfplan
             - bash: |
+                set -e
                 if ! command -v unzip >/dev/null 2>&1; then
                   sudo apt-get update -y && sudo apt-get install -y unzip
                 fi
-              displayName: 'Ensure unzip (MDP base image may lack it)'
+                if ! command -v az >/dev/null 2>&1; then
+                  curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+                fi
+              displayName: 'Ensure tooling (unzip + Azure CLI)'
             - task: TerraformInstaller@1
               inputs: { terraformVersion: '1.15.8' }
             - task: AzureCLI@2
@@ -103,7 +111,7 @@ stages:
                   export ARM_OIDC_TOKEN=$idToken
                   export ARM_SUBSCRIPTION_ID=$(subscriptionId)
                   terraform init
-                  cp $(Pipeline.Workspace)/tfplan ./tfplan
+                  cp $(Pipeline.Workspace)/tfplan/tfplan ./tfplan
                   terraform apply -input=false tfplan
 
 # NOTE on app secrets:
