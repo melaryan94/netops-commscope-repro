@@ -81,7 +81,7 @@ cd netops-commscope-repro
    Download the returned URL, install with the **Azure VPN Client**, connect.
 2. From the connected client, browse to the **custom_domain** output
    (e.g. `https://netops.commscope.com`). Accept the self-signed cert warning.
-3. Log in with `netops` / `P@ssw0rd!`, then exercise:
+3. Log in with `netops` / `netops-demo`, then exercise:
    - **Devices** — protected API call
    - **Egress IP** — should return the **NAT Gateway** public IP (stable egress)
    - **DB check** — proves the private path to PostgreSQL

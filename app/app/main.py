@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # --- Config (all via env so behavior can be flipped without code changes) ---
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-only-change-me")
+JWT_SECRET = os.getenv("JWT_SECRET", "local-dev-only")
 JWT_ALG = "HS256"
 JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", "3600"))
 # Comma-separated allowed origins. Empty = no CORS middleware (reproduces the
@@ -39,7 +39,7 @@ DATABASE_URL = _database_url()  # optional; enables /api/v1/dbcheck
 
 # Dummy credentials — NOT for production
 DEMO_USER = os.getenv("DEMO_USER", "netops")
-DEMO_PASS = os.getenv("DEMO_PASS", "P@ssw0rd!")
+DEMO_PASS = os.getenv("DEMO_PASS", "netops-demo")
 
 app = FastAPI(title="NetOps Command Center (dummy)", version="0.1.0")
 

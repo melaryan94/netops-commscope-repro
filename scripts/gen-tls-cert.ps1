@@ -10,10 +10,13 @@
 [CmdletBinding()]
 param(
   [string]$Domain      = "netops.commscope.com",
-  [string]$PfxPassword = "Repro-Tls-P@ss1"
+  [string]$PfxPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+# Generate a random PFX password if none supplied (avoids hardcoded secrets).
+if (-not $PfxPassword) { $PfxPassword = [Guid]::NewGuid().ToString('N') }
 
 $tfDir  = Join-Path (Split-Path -Parent $PSScriptRoot) "terraform"
 $outFile = Join-Path $tfDir "generated-tls.auto.tfvars"

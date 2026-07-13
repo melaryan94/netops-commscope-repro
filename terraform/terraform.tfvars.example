@@ -8,10 +8,10 @@ custom_domain = "netops.commscope.com"
 # subscription_id = "00000000-0000-0000-0000-000000000000"
 
 pg_admin_login    = "pgadmin"
-pg_admin_password = "ChangeMe-Str0ng-Passw0rd!"
+pg_admin_password = "" # leave empty to auto-generate a strong random password
 
 demo_user     = "netops"
-demo_password = "P@ssw0rd!"
+demo_password = "netops-demo"
 
 # These two are populated automatically by scripts/deploy.ps1:
 # deployer_ip        = "203.0.113.10"

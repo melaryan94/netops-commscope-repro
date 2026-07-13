@@ -58,7 +58,7 @@ variable "demo_user" {
 variable "demo_password" {
   description = "Dummy app login password."
   type        = string
-  default     = "P@ssw0rd!"
+  default     = "netops-demo"
   sensitive   = true
 }
 
