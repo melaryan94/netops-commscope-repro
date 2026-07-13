@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and adjust. Sensitive values can instead be passed
+# via environment variables (TF_VAR_pg_admin_password, etc.).
+
+location      = "eastus2"
+prefix        = "netops-cs"
+custom_domain = "netops.commscope.com"
+
+# subscription_id = "00000000-0000-0000-0000-000000000000"
+
+pg_admin_login    = "pgadmin"
+pg_admin_password = "ChangeMe-Str0ng-Passw0rd!"
+
+demo_user     = "netops"
+demo_password = "P@ssw0rd!"
+
+# These two are populated automatically by scripts/deploy.ps1:
+# deployer_ip        = "203.0.113.10"
+# vpn_root_cert_data = "MIIC5....single-line-base64...."

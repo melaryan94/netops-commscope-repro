@@ -1,0 +1,13 @@
+# Example backend configuration for remote state.
+# Copy to your infra/ folder as backend.tf and fill in the storage account name
+# printed by cicd/bootstrap-remote-state.ps1.
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = "sttfstatenetopsXXXXX" # your actual name
+    container_name       = "tfstate"
+    key                  = "netops-dev.tfstate"    # one key per environment
+    use_azuread_auth     = true                    # AAD/RBAC, no storage keys
+  }
+}

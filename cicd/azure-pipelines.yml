@@ -1,0 +1,83 @@
+# Azure DevOps pipeline: plan on PR, apply on merge to main.
+# Auth uses a Workload Identity Federation (OIDC) service connection — no secrets.
+# Prereqs:
+#   - Service connection 'sc-netops-oidc' (Azure Resource Manager -> Workload identity
+#     federation, automatic), whose identity has Contributor on the target sub/RG and
+#     Storage Blob Data Contributor on the remote-state storage account.
+#   - Free "HashiCorp Terraform" marketplace extension (for TerraformInstaller@1). If
+#     unavailable, replace that task with a script that downloads the Terraform binary.
+#   - infra/ contains backend.tf + envs/dev.tfvars.
+
+trigger:
+  branches: { include: [ main ] }
+pr:
+  branches: { include: [ main ] }
+
+variables:
+  serviceConnection: 'sc-netops-oidc'
+  subscriptionId: '<sub-guid>'
+  workingDir: 'infra'
+
+stages:
+# ---------- PLAN (runs on PRs and main) ----------
+- stage: Plan
+  jobs:
+  - job: plan
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - task: TerraformInstaller@1
+        inputs: { terraformVersion: 'latest' }
+      - task: AzureCLI@2
+        displayName: 'terraform plan'
+        inputs:
+          azureSubscription: '$(serviceConnection)'
+          scriptType: bash
+          addSpnToEnvironment: true          # exposes servicePrincipalId / idToken / tenantId
+          workingDirectory: '$(workingDir)'
+          scriptLocation: inlineScript
+          inlineScript: |
+            export ARM_USE_OIDC=true
+            export ARM_CLIENT_ID=$servicePrincipalId
+            export ARM_TENANT_ID=$tenantId
+            export ARM_OIDC_TOKEN=$idToken
+            export ARM_SUBSCRIPTION_ID=$(subscriptionId)
+            terraform init
+            terraform validate
+            terraform plan -input=false -var-file=envs/dev.tfvars -out=tfplan
+      - publish: '$(workingDir)/tfplan'
+        artifact: tfplan
+
+# ---------- APPLY (only on main, gated by Environment approval) ----------
+- stage: Apply
+  dependsOn: Plan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: apply
+    environment: 'dev'                        # add approvals here for test/prod
+    pool: { vmImage: 'ubuntu-latest' }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+            - download: current
+              artifact: tfplan
+            - task: TerraformInstaller@1
+              inputs: { terraformVersion: 'latest' }
+            - task: AzureCLI@2
+              displayName: 'terraform apply'
+              inputs:
+                azureSubscription: '$(serviceConnection)'
+                scriptType: bash
+                addSpnToEnvironment: true
+                workingDirectory: '$(workingDir)'
+                scriptLocation: inlineScript
+                inlineScript: |
+                  export ARM_USE_OIDC=true
+                  export ARM_CLIENT_ID=$servicePrincipalId
+                  export ARM_TENANT_ID=$tenantId
+                  export ARM_OIDC_TOKEN=$idToken
+                  export ARM_SUBSCRIPTION_ID=$(subscriptionId)
+                  terraform init
+                  cp $(Pipeline.Workspace)/tfplan ./tfplan
+                  terraform apply -input=false tfplan
