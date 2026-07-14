@@ -42,6 +42,11 @@ Then:
 *(All of this is spelled out in [`../cicd-private/README.md`](../cicd-private/README.md).)*
 
 ## Phase 2 — Repo structure for multiple RGs
+
+> **Ready-to-copy starter:** a working skeleton for everything below lives in
+> [`../brownfield-scaffold/`](../brownfield-scaffold/) — a `stacks/_template/` folder
+> to copy per RG, plus a parameterized pipeline template. See its README.
+
 ```
 terraform/
   stacks/
@@ -93,7 +98,11 @@ template runs per stack. Each pipeline:
 - **PR** → `terraform plan` on the MDP (VNet-injected) agent → reviewers see the diff.
 - **Merge to main** → **approval gate** → `terraform apply`.
 
-For many stacks, use a **matrix / template** so you don't copy YAML N times.
+For many stacks, use a **matrix / template** so you don't copy YAML N times. The
+scaffold does exactly this: [`../brownfield-scaffold/pipelines/terraform-stack.yml`](../brownfield-scaffold/pipelines/terraform-stack.yml)
+is one reusable template, and each RG gets a tiny consumer (see
+[`rg-example.yml`](../brownfield-scaffold/pipelines/rg-example.yml)) that `extends` it
+with its own `stackPath` / `environment` / `subscriptionId`.
 
 ## Phase 6 — Operating model (the governance loop)
 - All infra changes are **pull requests** with an automatic `plan`.

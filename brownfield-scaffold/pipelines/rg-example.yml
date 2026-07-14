@@ -1,0 +1,22 @@
+# Example per-stack pipeline. Copy to pipelines/<rg-name>.yml, adjust parameters,
+# and create ONE Azure DevOps pipeline pointing at this file.
+#
+# The path filters mean this pipeline only runs when THIS stack's files change —
+# so many stacks can live in one repo without triggering each other.
+
+trigger:
+  branches: { include: [ main ] }
+  paths:
+    include: [ brownfield-scaffold/stacks/rg-network/** ]
+pr:
+  branches: { include: [ main ] }
+  paths:
+    include: [ brownfield-scaffold/stacks/rg-network/** ]
+
+extends:
+  template: terraform-stack.yml
+  parameters:
+    stackPath: brownfield-scaffold/stacks/rg-network
+    environment: rg-network                 # create this ADO Environment + approval
+    subscriptionId: '<your-subscription-id>'
+    # serviceConnection / mdpPool / terraformVersion fall back to template defaults

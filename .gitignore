@@ -20,6 +20,13 @@ cicd-private/bootstrap/*.tfstate.*
 cicd-private/bootstrap/tfplan
 cicd-private/bootstrap/*.auto.tfvars
 
+# Brownfield scaffold stacks (state is remote; don't commit local artifacts)
+brownfield-scaffold/**/.terraform/
+brownfield-scaffold/**/.terraform.lock.hcl
+brownfield-scaffold/**/*.tfstate
+brownfield-scaffold/**/*.tfstate.*
+brownfield-scaffold/**/tfplan
+
 # Python
 app/.venv/
 __pycache__/
