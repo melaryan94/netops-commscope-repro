@@ -10,6 +10,11 @@ them via Azure DevOps pipelines. Start in **dev**, then repeat per environment.
 > instead — it runs on **Managed DevOps Pools** (VNet-injected agents) with an
 > **azapi/AAD** private state account. See
 > [`../cicd-private/README.md`](../cicd-private/README.md).
+>
+> **Existing resources across multiple resource groups?** For a brownfield,
+> import-and-adopt playbook (aztfexport per RG, one state per RG, refactor to a
+> clean plan, then wire the private pipeline), see
+> [BROWNFIELD-ADOPTION.md](BROWNFIELD-ADOPTION.md).
 
 ## Phase 0 — Plan & prerequisites
 - Inventory what exists per resource group (App Service, SWA, Key Vault, PostgreSQL,
