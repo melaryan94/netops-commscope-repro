@@ -9,10 +9,6 @@ policy-enforced), so it builds on the private CI/CD pattern in
 [`../cicd-private/`](../cicd-private/). For the general (public-agent) adoption
 notes, see [ADOPT-TERRAFORM-AZURE-DEVOPS.md](ADOPT-TERRAFORM-AZURE-DEVOPS.md).
 
-> **Doing your first RG with a facilitator?** Follow the step-by-step, do-it-together
-> session guide in [FIRST-RG-RUNBOOK.md](FIRST-RG-RUNBOOK.md) — it walks one resource
-> group through import → clean plan → pipeline → first change, live.
-
 ---
 
 ## Phase 0 — Decisions & prep (before touching anything)
